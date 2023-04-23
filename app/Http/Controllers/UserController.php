@@ -6,9 +6,8 @@ use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-// use Illuminate\Support\Facades\Mail;
-// use Illuminate\Contracts\Mail\Mailable;
-
+use App\Mail\AfterRegister;
+use Illuminate\Support\Facades\Mail;
 
 class UserController extends Controller
 {
@@ -24,7 +23,7 @@ class UserController extends Controller
 
     public function handleProviderCallback()
         {
-            $callback = Socialite::driver('google')->user();
+            $callback = Socialite::driver('google')->stateless()->user();
             $data = [
                 'name' => $callback->getName(),
                 'email' => $callback->getEmail(),
@@ -32,12 +31,12 @@ class UserController extends Controller
                 'email_verified_at' => date('Y-m-d H:i:s', time()),
             ];
 
-            $user = User::firstOrCreate(['email' => $data['email']], $data);
-            // $user = User::whereEmail($data['email'])->first();
-            // if (!$user) {
-            //     $user = User::create($data);
-            //     Mail::to($user->email)->send(new AfterRegister($user));
-            // }
+            // $user = User::firstOrCreate(['email' => $data['email']], $data);
+            $user = User::whereEmail($data['email'])->first();
+            if (!$user) {
+                $user = User::create($data);
+                Mail::to($user->email)->send(new AfterRegister($user));
+            }
             Auth::login($user, true);
 
             return redirect(route('welcome'));
